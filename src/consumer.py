@@ -90,15 +90,19 @@ class DynamoDB_Table:
         return self.dynamodb.Table(table_name)
     
     def widget_create(self, request):
-        data = pd.json_normalize(request)
-        print(data)
+        if 'widgetId' in request:
+            request['id'] = request.pop('widgetId')
+        other_attributes = {attr['name']: attr['value'] for attr in request['otherAttributes']}
+        request.update(other_attributes)
+        del request['otherAttributes']
+        self.table.put_item(Item=request)
 
     def widget_delete(self, request):
-        # Implement widget deletion logic here
+        # Widget deletion logic
         pass
 
     def widget_update(self, request): 
-        # Implement widget update logic here
+        # Widget update logic
         pass
 
 def process_request(request, args):
@@ -112,7 +116,7 @@ def process_request(request, args):
             s3_client.widget_update(request)
 
     if args.dynamodb_widget_table is not None:
-        dynamodb_client = DynamoDB_Table()
+        dynamodb_client = DynamoDB_Table(args.dynamodb_widget_table)
         if request['type'] == 'create':
             dynamodb_client.widget_create(request)
         elif request['type'] == 'delete':
